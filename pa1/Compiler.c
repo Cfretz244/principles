@@ -7,40 +7,40 @@
 
 /* -------------------------------------------------
 
-            CFG for tinyL LANGUAGE
+   CFG for tinyL LANGUAGE
 
-     PROGRAM ::= STMTLIST .
-     STMTLIST ::= STMT MORESTMTS
-     MORESTMTS ::= ; STMTLIST | epsilon
-     STMT ::= ASSIGN | SWAP | READ | PRINT
-     ASSIGN ::= VARIABLE = EXPR
-     SWAP  ::= % VARIABLE VARIABLE
-     READ  ::= & VARIABLE
-     PRINT ::= # VARIABLE
-     EXPR ::= + EXPR EXPR |
-              - EXPR EXPR |
-              * EXPR EXPR |
-              VARIABLE | 
-              DIGIT
-     VARIABLE ::= a | b | c | d  
-     DIGIT ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+    PROGRAM ::= STMTLIST .
+    STMTLIST ::= STMT MORESTMTS
+    MORESTMTS ::= ; STMTLIST | epsilon
+    STMT ::= ASSIGN | SWAP | READ | PRINT
+    ASSIGN ::= VARIABLE = EXPR
+    SWAP  ::= % VARIABLE VARIABLE
+    READ  ::= & VARIABLE
+    PRINT ::= # VARIABLE
+    EXPR ::= + EXPR EXPR |
+            - EXPR EXPR |
+            * EXPR EXPR |
+            VARIABLE | 
+            DIGIT
+    VARIABLE ::= a | b | c | d  
+    DIGIT ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
-     NOTE: tokens are exactly a single character long
+NOTE: tokens are exactly a single character long
 
-     Example expressions:
+Example expressions:
 
-           +12.
-           +1b.
-           +*34-78.
-           -*+1+2a58.
++12.
++1b.
++*34-78.
+-*+1+2a58.
 
-     Example programs;
+Example programs;
 
-         &a;&b;c=+3*ab;d=+c1;#d.
-         b=-*+1+2a58;#b.
+&a;&b;c=+3*ab;d=+c1;#d.
+b=-*+1+2a58;#b.
 
- ---------------------------------------------------
- */
+---------------------------------------------------
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,98 +85,183 @@ static int digit();
 /*************************************************************************/
 static int digit()
 {
-	int reg;
+    int reg;
 
-	if (!is_digit(token)) {
-		ERROR("Expected digit\n");
-		exit(EXIT_FAILURE);
-	}
-	reg = next_register();
-	CodeGen(LOADI, reg, to_digit(token), EMPTY_FIELD);
-	next_token();
-	return reg;
+    if (!is_digit(token)) {
+        ERROR("Expected digit\n");
+        exit(EXIT_FAILURE);
+    }
+    reg = next_register();
+    CodeGen(LOADI, reg, to_digit(token), EMPTY_FIELD);
+    next_token();
+    return reg;
 }
 
-static int variable()
-{
-	/* YOUR CODE GOES HERE */
+static int variable() {
+    int chosen;
+    switch (token) {
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+            chosen = token;
+            break;
+        default:
+            ERROR("Syntax Error: Expected variable.\n");
+    }
+    next_token();
+    return chosen;
 }
 
-static int expr()
-{
-	int reg, left_reg, right_reg;
+static int expr() {
+    int reg, left_reg, right_reg, var;
 
-	switch (token) {
-	case '+':
-		next_token();
-		left_reg = expr();
-		right_reg = expr();
-		reg = next_register();
-		CodeGen(ADD, reg, left_reg, right_reg);
-		return reg;
-	/* YOUR CODE GOES HERE */
-	case '0':
-	case '1':
-	case '2':
-	case '3':
-	case '4':
-	case '5':
-	case '6':
-	case '7':
-	case '8':
-	case '9':
-		return digit();
-	default:
-		ERROR("Symbol %c unknown\n", token);
-		exit(EXIT_FAILURE);
-	}
+    switch (token) {
+        case '+':
+            next_token();
+            left_reg = expr();
+            right_reg = expr();
+            reg = next_register();
+            CodeGen(ADD, reg, left_reg, right_reg);
+            return reg;
+        case '-':
+            next_token();
+            left_reg = expr();
+            right_reg = expr();
+            reg = next_register();
+            CodeGen(SUB, reg, left_reg, right_reg);
+            return reg;
+        case '*':
+            next_token();
+            left_reg = expr();
+            right_reg = expr();
+            reg = next_register();
+            CodeGen(MUL, reg, left_reg, right_reg);
+            return reg;
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+            var = variable();
+            reg = next_register();
+            CodeGen(LOAD, reg, var, EMPTY_FIELD);
+            return reg;
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            return digit();
+        default:
+            ERROR("Symbol %c unknown\n", token);
+            exit(EXIT_FAILURE);
+    }
 }
 
-static void assign()
-{
-	/* YOUR CODE GOES HERE */
+static void assign() {
+    int var = variable();
+    if (token == '=') {
+        next_token();
+        int reg = expr();
+        CodeGen(STORE, var, reg, EMPTY_FIELD);
+    } else {
+        ERROR("Syntax Error: In assignment, expected '='.\n");
+    }
 }
 
-static void swap()
-{
-	/* YOUR CODE GOES HERE */
+static void swap() {
+    int left_var = variable(), right_var = variable();
+    int reg_one = next_register(), reg_two = next_register();
+    CodeGen(LOAD, reg_one, left_var, EMPTY_FIELD);
+    CodeGen(LOAD, reg_two, right_var, EMPTY_FIELD);
+    CodeGen(STORE, left_var, reg_two, EMPTY_FIELD);
+    CodeGen(STORE, right_var, reg_one, EMPTY_FIELD);
 }
 
-static void read()
-{
-	/* YOUR CODE GOES HERE */
+static void read() {
+    int var = variable();
+    CodeGen(READ, var, EMPTY_FIELD, EMPTY_FIELD);
 }
 
-static void print()
-{
-	/* YOUR CODE GOES HERE */
+static void print() {
+    int var = variable();
+    CodeGen(WRITE, var, EMPTY_FIELD, EMPTY_FIELD);
 }
 
-static void stmt()
-{
-	/* YOUR CODE GOES HERE */
+static void stmt() {
+    switch (token) {
+        case '%':
+            next_token();
+            swap();
+            break;
+        case '&':
+            next_token();
+            read();
+            break;
+        case '#':
+            next_token();
+            print();
+            break;
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+            assign();
+            break;
+        default:
+            ERROR("Syntax error: Expected swap, read, print, or assign.");
+    }
 }
 
-static void morestmts()
-{
-	/* YOUR CODE GOES HERE */
+static void morestmts() {
+    if (token == ';') {
+        next_token();
+        stmtlist();
+    } else {
+        return;
+    }
 }
 
-static void stmtlist()
-{
-	/* YOUR CODE GOES HERE */
+static void stmtlist() {
+    switch (token) {
+        case '%':
+        case '&':
+        case '#':
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+            stmt();
+            morestmts();
+            break;
+        default:
+            ERROR("Syntax error: Expected stmt.\n");
+    }
 }
 
-static void program()
-{
-	/* YOUR CODE GOES HERE */
-	/* the following call to expr() is to get you started */
-        /*       this needs to be changed to another call     */
-	expr();
-	if (token != '.') {
-		ERROR("Program error.  Current input symbol is %c\n", token);
-		exit(EXIT_FAILURE);
-	};
+static void program() {
+    switch (token) {
+        case '%':
+        case '&':
+        case '#':
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+            stmtlist();
+            break;
+        default:
+            ERROR("Syntax error: Expected stmtlist.\n");
+    }
+    if (token != '.') {
+        ERROR("Program error.  Current input symbol is %c\n", token);
+        exit(EXIT_FAILURE);
+    }
 }
 
 /*************************************************************************/
@@ -184,98 +269,98 @@ static void program()
 /*************************************************************************/
 static void CodeGen(OpCode opcode, int field1, int field2, int field3)
 {
-	Instruction instr;
+    Instruction instr;
 
-	if (!outfile) {
-		ERROR("File error\n");
-		exit(EXIT_FAILURE);
-	}
-	instr.opcode = opcode;
-	instr.field1 = field1;
-	instr.field2 = field2;
-	instr.field3 = field3;
-	PrintInstruction(outfile, &instr);
+    if (!outfile) {
+        ERROR("File error\n");
+        exit(EXIT_FAILURE);
+    }
+    instr.opcode = opcode;
+    instr.field1 = field1;
+    instr.field2 = field2;
+    instr.field3 = field3;
+    PrintInstruction(outfile, &instr);
 }
 
 static inline void next_token()
 {
-	printf("%c ", *buffer);
-	if (*buffer == ';')
-		printf("\n");
-	buffer++;
-	if (*buffer == '.')
-		printf(".\n");
+    printf("%c ", *buffer);
+    if (*buffer == ';')
+        printf("\n");
+    buffer++;
+    if (*buffer == '.')
+        printf(".\n");
 }
 
 static inline int next_register()
 {
-	return regnum++;
+    return regnum++;
 }
 
 static inline int is_digit(char c)
 {
-	if (c >= '0' && c <= '9')
-		return 1;
-	return 0;
+    if (c >= '0' && c <= '9')
+        return 1;
+    return 0;
 }
 
 static inline int to_digit(char c)
 {
-	if (is_digit(c))
-		return c - '0';
-	WARNING("Non-digit passed to %s, returning zero\n", __func__);
-	return 0;
+    if (is_digit(c))
+        return c - '0';
+    WARNING("Non-digit passed to %s, returning zero\n", __func__);
+    return 0;
 }
 
 static inline int is_identifier(char c)
 {
-	if (c >= 'a' && c <= 'd')
-		return 1;
-	return 0;
+    if (c >= 'a' && c <= 'd')
+        return 1;
+    return 0;
 }
 
 static char *read_input(FILE * f)
 {
-	int max, i, c;
-	char *b;
+    int max, i, c;
+    char *b;
 
-	max = MAX_BUFFER_SIZE;
-	b = (char *)calloc(max, sizeof(char));
-	if (!b) {
-		ERROR("Calloc failed\n");
-		exit(EXIT_FAILURE);
-	}
+    max = MAX_BUFFER_SIZE;
+    b = (char *)calloc(max, sizeof(char));
+    if (!b) {
+        ERROR("Calloc failed\n");
+        exit(EXIT_FAILURE);
+    }
 
-	/* skip leading whitespace */
-	for (;;) {
-		c = fgetc(f);
-		if (EOF == c) {
-			break;
-		} else if (!isspace(c)) {
-			ungetc(c, f);
-			break;
-		}
-	}
+    /* skip leading whitespace */
+    for (;;) {
+        c = fgetc(f);
+        if (EOF == c) {
+            break;
+        } else if (!isspace(c)) {
+            ungetc(c, f);
+            break;
+        }
+    }
 
-	i = 0;
-	for (;;) {
-		c = fgetc(f);
-		if (EOF == c) {
-			b[i] = '\0';
-			break;
-		}
-		b[i] = c;
-		if (max - 1 == i) {
-			max = max + max;
-			b = (char *)realloc(buffer, max * sizeof(char));
-			if (!b) {
-				ERROR("Realloc failed\n");
-				exit(EXIT_FAILURE);
-			}
-		}
-		++i;
-	}
-	return b;
+    i = 0;
+    for (;;) {
+        c = fgetc(f);
+        if (EOF == c) {
+            b[i] = '\0';
+            break;
+        }
+        b[i] = c;
+        if (max - 1 == i) {
+            max = max + max;
+            b = (char *)realloc(buffer, max * sizeof(char));
+            if (!b) {
+                ERROR("Realloc failed\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+        ++i;
+    }
+    return b;
 }
 
 /*************************************************************************/
@@ -284,38 +369,38 @@ static char *read_input(FILE * f)
 
 int main(int argc, char *argv[])
 {
-	const char *outfilename = "tinyL.out";
-	char *input;
-	FILE *infile;
+    const char *outfilename = "tinyL.out";
+    char *input;
+    FILE *infile;
 
-	printf("------------------------------------------------\n");
-	printf("CS314 compiler for tinyL\n      Fall 2014\n");
-	printf("------------------------------------------------\n");
+    printf("------------------------------------------------\n");
+    printf("CS314 compiler for tinyL\n      Fall 2014\n");
+    printf("------------------------------------------------\n");
 
-	if (argc != 2) {
-		fprintf(stderr, "Use of command:\n  compile <tinyL file>\n");
-		exit(EXIT_FAILURE);
-	}
+    if (argc != 2) {
+        fprintf(stderr, "Use of command:\n  compile <tinyL file>\n");
+        exit(EXIT_FAILURE);
+    }
 
-	infile = fopen(argv[1], "r");
-	if (!infile) {
-		ERROR("Cannot open input file \"%s\"\n", argv[1]);
-		exit(EXIT_FAILURE);
-	}
-	outfile = fopen(outfilename, "w");
-	if (!outfile) {
-		ERROR("Cannot open output file \"%s\"\n", outfilename);
-		exit(EXIT_FAILURE);
-	}
+    infile = fopen(argv[1], "r");
+    if (!infile) {
+        ERROR("Cannot open input file \"%s\"\n", argv[1]);
+        exit(EXIT_FAILURE);
+    }
+    outfile = fopen(outfilename, "w");
+    if (!outfile) {
+        ERROR("Cannot open output file \"%s\"\n", outfilename);
+        exit(EXIT_FAILURE);
+    }
 
-	input = read_input(infile);
-	buffer = input;
-	program();
+    input = read_input(infile);
+    buffer = input;
+    program();
 
-	printf("\nCode written to file \"%s\".\n\n", outfilename);
+    printf("\nCode written to file \"%s\".\n\n", outfilename);
 
-	free(input);
-	fclose(infile);
-	fclose(outfile);
-	return EXIT_SUCCESS;
+    free(input);
+    fclose(infile);
+    fclose(outfile);
+    return EXIT_SUCCESS;
 }
