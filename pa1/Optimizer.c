@@ -12,8 +12,8 @@
 #include "Utils.h"
 
 // Function Declarations
-void handle_folding(Instruction *head);
 void handle_simplification(Instruction *head);
+void handle_folding(Instruction *head);
 int is_op(Instruction *instruction);
 
 int main()
@@ -46,40 +46,6 @@ int main()
     PrintInstructionList(stdout, head);
     DestroyInstructionList(head);
     return EXIT_SUCCESS;
-}
-
-void handle_folding(Instruction *head) {
-    if (!head->next || !head->next->next) {
-        return;
-    }
-    Instruction *prev = head, *current = prev->next, *next = current->next;
-    while (current && next) {
-        if (prev->opcode == LOADI && current->opcode == LOADI && is_op(next)) {
-            int first = prev->field2, second = current->field2, dest = next->field1;
-            prev->field1 = dest;
-            if (next->opcode == ADD) {
-                prev->field2 = first + second;
-            } else if (next->opcode == MUL) {
-                prev->field2 = first * second;
-            } else {
-                prev->field2 = first - second;
-            }
-            Instruction *tmp = next->next;
-            free(current);
-            free(next);
-            prev->next = tmp;
-            if (prev->next && prev->next->next) {
-                current = prev->next;
-                next = current->next;
-            } else {
-                return;
-            }
-        } else {
-            prev = current;
-            current = next;
-            next = next->next;
-        }
-    }
 }
 
 void handle_simplification(Instruction *head) {
@@ -123,6 +89,44 @@ void handle_simplification(Instruction *head) {
                 } else {
                     return;
                 }
+            } else {
+                prev = current;
+                current = next;
+                next = next->next;
+            }
+        } else {
+            prev = current;
+            current = next;
+            next = next->next;
+        }
+    }
+}
+
+void handle_folding(Instruction *head) {
+    if (!head->next || !head->next->next) {
+        return;
+    }
+    Instruction *prev = head, *current = prev->next, *next = current->next;
+    while (current && next) {
+        if (prev->opcode == LOADI && current->opcode == LOADI && is_op(next)) {
+            int first = prev->field2, second = current->field2, dest = next->field1;
+            prev->field1 = dest;
+            if (next->opcode == ADD) {
+                prev->field2 = first + second;
+            } else if (next->opcode == MUL) {
+                prev->field2 = first * second;
+            } else {
+                prev->field2 = first - second;
+            }
+            Instruction *tmp = next->next;
+            free(current);
+            free(next);
+            prev->next = tmp;
+            if (prev->next && prev->next->next) {
+                current = prev->next;
+                next = current->next;
+            } else {
+                return;
             }
         } else {
             prev = current;
