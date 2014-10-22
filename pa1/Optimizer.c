@@ -19,9 +19,6 @@ int is_op(Instruction *instruction);
 int main()
 {
     Instruction *head;
-    Instruction *instr1, *instr2, *instr3;
-    int opt_flag, opt_calc;
-
 
     head = ReadInstructionList(stdin);
 
