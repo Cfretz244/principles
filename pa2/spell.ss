@@ -36,8 +36,10 @@
 
 (define key
   (lambda (w)
-     'SOME_CODE_GOES_HERE ;; *** FUNCTION BODY IS MISSING ***
-))
+    (cond
+      ((null? w) 1)
+      ((not (list? w)) (ctv w))
+      (else (* (key (car w)) (key (cdr w)))))))
 
 ;; -----------------------------------------------------
 ;; EXAMPLE KEY FUNCTIONS
@@ -52,10 +54,11 @@
 ;; HASH FUNCTION GENERATORS
 
 ;; value of parameter "size" should be a prime number
+
 (define gen-hash-division-method
-  (lambda (size) ;; range of values: 0..size-1
-     'SOME_CODE_GOES_HERE ;; *** FUNCTION BODY IS MISSING ***
-))
+  (lambda (size)
+    (lambda (input)
+       (modulo (key input) size))))
 
 ;; value of parameter "size" is not critical
 ;; Note: hash functions may return integer values in "real"
