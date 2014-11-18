@@ -53,27 +53,21 @@
 ;; -----------------------------------------------------
 ;; HASH FUNCTION GENERATORS
 
-;; value of parameter "size" should be a prime number
-
 (define gen-hash-division-method
   (lambda (size)
     (lambda (input)
        (modulo (key input) size))))
 
-;; value of parameter "size" is not critical
-;; Note: hash functions may return integer values in "real"
-;;       format, e.g., 17.0 for 17
-
 (define gen-hash-multiplication-method
-  (lambda (size) ;; range of values: 0..size-1
-     'SOME_CODE_GOES_HERE ;; *** FUNCTION BODY IS MISSING ***
-))
+  (lambda (size)
+      (lambda (input)
+        (let ((k (key input)))
+          (floor (* size (- (* k A) (floor (* k A)))))))))
 
-;; value of parameter "size" should be a prime number
 (define gen-hash-hybrid-method
-  (lambda (size) ;; range of values: 0..size-1
-     'SOME_CODE_GOES_HERE ;; *** FUNCTION BODY IS MISSING ***
-))
+  (lambda (size)
+    (lambda (input)
+      (modulo (+ (* 2 ((gen-hash-division-method size) input)) (* 3 ((gen-hash-multiplication-method size) input))) size))))
 
 
 ;; -----------------------------------------------------
