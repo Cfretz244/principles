@@ -28,8 +28,23 @@
 ;; -----------------------------------------------------
 ;; HELPER FUNCTIONS
 
-;; *** CODE FOR ANY HELPER FUNCTION GOES HERE ***
+(define subset?
+  (lambda (l1 l2)
+    (if (null? l1) #t
+    (and (member (car l1) l2) (subset? (cdr l1) l2)))))
 
+(define apply-func
+  (lambda (func dict)
+    (if (null? dict) '()
+        (let ((head (list (func (car dict))))
+              (tail (apply-func func (cdr dict))))
+          (if (member (car head) tail) tail
+              (append head tail))))))
+
+(define build-vector
+  (lambda (func-list dict)
+    (if (null? func-list) '()
+        (append (apply-func (car func-list) dict) (build-vector (cdr func-list) dict)))))
 
 ;; -----------------------------------------------------
 ;; KEY FUNCTION
@@ -120,9 +135,11 @@
 ;; SPELL CHECKER GENERATOR
 
 (define gen-checker
-  (lambda (hashfunctionlist dict)
-     'SOME_CODE_GOES_HERE ;; *** FUNCTION BODY IS MISSING ***
-))
+  (lambda (func-list dict)
+    (let ((vector (build-vector func-list dict)))
+      (lambda (word)
+        (let ((hashes (build-vector func-list (list word))))
+          (if (subset? hashes vector) #t #f))))))
 
 
 ;; -----------------------------------------------------
