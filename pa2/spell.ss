@@ -9,10 +9,10 @@
 (load "include.ss")
 
 ;; contains simple dictionary with only four words
-(load "test-dictionary.ss")
+;;(load "test-dictionary.ss")
 
 ;; contains full dictionary 
-;; (load "dictionary.ss")
+(load "dictionary.ss")
 
 ;; -----------------------------------------------------
 ;; Simple test words 
@@ -31,7 +31,7 @@
 (define subset?
   (lambda (l1 l2)
     (if (null? l1) #t
-    (and (member (car l1) l2) (subset? (cdr l1) l2)))))
+        (and (member (car l1) l2) (subset? (cdr l1) l2)))))
 
 (define apply-func
   (lambda (func dict)
@@ -51,10 +51,11 @@
 
 (define key
   (lambda (w)
-    (cond
-      ((null? w) 1)
-      ((not (list? w)) (ctv w))
-      (else (* (key (car w)) (key (cdr w)))))))
+    (letrec ((count
+              (lambda (w c)
+                (if (null? w) 0
+                    (+ (* (expt 7 c) (ctv (car w))) (count (cdr w) (+ c 1)))))))
+      (count w 0))))
 
 ;; -----------------------------------------------------
 ;; EXAMPLE KEY FUNCTIONS
@@ -145,21 +146,28 @@
 ;; -----------------------------------------------------
 ;; EXAMPLE SPELL CHECKERS
 
+(display "Beginning checker creation")
+
 (define checker-1 (gen-checker hashfl-1 dictionary))
+(display "Finished first checker")
+(newline)
+
 (define checker-2 (gen-checker hashfl-2 dictionary))
+(display "Finished second checker")
+(newline)
+
 (define checker-3 (gen-checker hashfl-3 dictionary))
+(display "Finished third checker")
+(newline)
 
 
-
-;; EXAMPLE APPLICATIONS OF A SPELL CHECKER
-;;
-;;  (checker-1 '(l o h a)) ==> #t
-;;  (checker-2 '(l o h a)) ==> #t
-;;  (checker-2 '(h e l l o)) ==> #t
-;;  (checker-3 '(o f)) ==> #t
-;;  (checker-3 language)  ==> #t
-;;  (checker-1 '(w h a t f u n)) ==> #f
-;;  (checker-2 '(w h a t f u n)) ==> #f
-;;  (checker-3 '(w h a t f u n)) ==> #f
+(checker-1 '(l o h a))
+(checker-2 '(l o h a))
+(checker-2 '(h e l l o))
+(checker-3 '(o f))
+(checker-3 language)
+(checker-1 '(w h a t f u n))
+(checker-2 '(w h a t f u n))
+(checker-3 '(w h a t f u n))
 
 
