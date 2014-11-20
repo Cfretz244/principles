@@ -9,10 +9,10 @@
 (load "include.ss")
 
 ;; contains simple dictionary with only four words
-;;(load "test-dictionary.ss")
+(load "test-dictionary.ss")
 
 ;; contains full dictionary 
-(load "dictionary.ss")
+;; (load "dictionary.ss")
 
 ;; -----------------------------------------------------
 ;; Simple test words 
