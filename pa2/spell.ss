@@ -28,23 +28,23 @@
 ;; -----------------------------------------------------
 ;; HELPER FUNCTIONS
 
-(define subset?
+(define is-a-subset?
   (lambda (l1 l2)
     (if (null? l1) #t
-        (and (member (car l1) l2) (subset? (cdr l1) l2)))))
+        (and (member (car l1) l2) (is-a-subset? (cdr l1) l2)))))
 
-(define apply-func
-  (lambda (func dict)
-    (if (null? dict) '()
-        (let ((head (list (func (car dict))))
-              (tail (apply-func func (cdr dict))))
-          (if (member (car head) tail) tail
-              (append head tail))))))
-
-(define build-vector
+(define create-bvector
   (lambda (func-list dict)
-    (if (null? func-list) '()
-        (append (apply-func (car func-list) dict) (build-vector (cdr func-list) dict)))))
+    (letrec ((apply-func
+              (lambda (func dict)
+                (if (null? dict) '()
+                    (let ((head (list (func (car dict))))
+                          (tail (apply-func func (cdr dict))))
+                      (if (member (car head) tail) tail
+                          (append head tail)))))))
+      (if (null? func-list) '()
+        (append (apply-func (car func-list) dict) (create-bvector (cdr func-list) dict))))))
+
 
 ;; -----------------------------------------------------
 ;; KEY FUNCTION
@@ -57,7 +57,6 @@
                     (+ (* (expt 7 c) (ctv (car w))) (count (cdr w) (+ c 1)))))))
       (count w 0))))
 
-;; -----------------------------------------------------
 ;; EXAMPLE KEY FUNCTIONS
 
 (define key1 (key hello))   ;; ==> 40762
@@ -69,16 +68,24 @@
 ;; -----------------------------------------------------
 ;; HASH FUNCTION GENERATORS
 
+;; value of parameter "size" should be a prime number
+
 (define gen-hash-division-method
   (lambda (size)
     (lambda (input)
        (modulo (key input) size))))
+
+;; value of parameter "size" is not critical
+;; Note: hash functions may return integer values in "real"
+;;       format, e.g., 17.0 for 17
 
 (define gen-hash-multiplication-method
   (lambda (size)
       (lambda (input)
         (let ((k (key input)))
           (floor (* size (- (* k A) (floor (* k A)))))))))
+
+;; value of parameter "size" should be a prime number
 
 (define gen-hash-hybrid-method
   (lambda (size)
@@ -137,37 +144,28 @@
 
 (define gen-checker
   (lambda (func-list dict)
-    (let ((vector (build-vector func-list dict)))
+    (let ((vector (create-bvector func-list dict)))
       (lambda (word)
-        (let ((hashes (build-vector func-list (list word))))
-          (if (subset? hashes vector) #t #f))))))
+        (let ((hashes (create-bvector func-list (list word))))
+          (if (is-a-subset? hashes vector) #t #f))))))
 
 
 ;; -----------------------------------------------------
 ;; EXAMPLE SPELL CHECKERS
 
-(display "Beginning checker creation")
-
 (define checker-1 (gen-checker hashfl-1 dictionary))
-(display "Finished first checker")
-(newline)
-
 (define checker-2 (gen-checker hashfl-2 dictionary))
-(display "Finished second checker")
-(newline)
-
 (define checker-3 (gen-checker hashfl-3 dictionary))
-(display "Finished third checker")
-(newline)
 
 
-(checker-1 '(l o h a))
-(checker-2 '(l o h a))
-(checker-2 '(h e l l o))
-(checker-3 '(o f))
-(checker-3 language)
-(checker-1 '(w h a t f u n))
-(checker-2 '(w h a t f u n))
-(checker-3 '(w h a t f u n))
 
-
+;; EXAMPLE APPLICATIONS OF A SPELL CHECKER
+;;
+;;  (checker-1 '(l o h a)) ==> #t
+;;  (checker-2 '(l o h a)) ==> #t
+;;  (checker-2 '(h e l l o)) ==> #t
+;;  (checker-3 '(o f)) ==> #t
+;;  (checker-3 language)  ==> #t
+;;  (checker-1 '(w h a t f u n)) ==> #f
+;;  (checker-2 '(w h a t f u n)) ==> #f
+;;  (checker-3 '(w h a t f u n)) ==> #f
